@@ -1,25 +1,34 @@
 package com.game.winner6767
 
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.game.winner6767.ui.GameScreen
+import com.game.winner6767.ui.theme.Game6767Theme
+import com.game.winner6767.ui.theme.ScreenBackground
+import com.game.winner6767.viewmodel.GameViewModel
 
-class MainActivity : AppCompatActivity() {
-
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        val titleText = findViewById<TextView>(R.id.titleText)
-        val playButton = findViewById<Button>(R.id.playButton)
-
-        titleText.text = getString(R.string.app_name)
-
-        playButton.setOnClickListener {
-            val intent = Intent(this, GameActivity::class.java)
-            startActivity(intent)
+        enableEdgeToEdge()
+        setContent {
+            Game6767Theme {
+                val viewModel: GameViewModel = viewModel()
+                GameScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ScreenBackground)
+                        .safeDrawingPadding()
+                )
+            }
         }
     }
 }
