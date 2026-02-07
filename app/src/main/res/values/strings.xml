@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">6767 Game</string>
-    <string name="subtitle">Find 6767 and win!</string>
-    <string name="play">PLAY</string>
-    <string name="play_again">PLAY AGAIN</string>
-    <string name="home">HOME</string>
-    <string name="score_default">Score: 0</string>
-    <string name="score_format">Score: %d</string>
-    <string name="time_default">Time: 30s</string>
-    <string name="time_format">Time: %ds</string>
-    <string name="find_target">Find: %d</string>
-    <string name="winner_number">6767</string>
-    <string name="winner_message">6767 IS THE WINNER!</string>
-    <string name="final_score">Final Score: %d</string>
+    <string name="app_name">2024 Number Game</string>
 </resources>
