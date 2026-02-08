@@ -9,3 +9,9 @@
 .cxx
 local.properties
 /app/build
+
+# Signing
+keystore.properties
+/keystore/
+*.jks
+*.keystore

@@ -32,7 +32,18 @@ A classic **2048** number puzzle game built with Jetpack Compose and a dark cybe
 4. Wait for Gradle sync to complete
 5. Click **Run** (select a device/emulator)
 
-### Build APK
+### Build Debug APK
+```bash
+./gradlew assembleDebug
+```
+
+### Build Release AAB (for Play Store)
+```bash
+./gradlew bundleRelease
+```
+AAB output: `app/build/outputs/bundle/release/app-release.aab`
+
+### Build Release APK
 ```bash
 ./gradlew assembleRelease
 ```
@@ -43,37 +54,34 @@ APK output: `app/build/outputs/apk/release/app-release.apk`
 ## Project Structure
 
 ```
-app/src/main/
-├── java/com/game/puzzle6767/
-│   ├── MainActivity.kt              # Entry point, sets up Compose UI
-│   ├── engine/
-│   │   └── GameEngine.kt            # Pure game logic (grid, merge, win/loss detection)
-│   ├── viewmodel/
-│   │   └── GameViewModel.kt         # MVVM state management, undo, score persistence
-│   └── ui/
-│       ├── GameScreen.kt            # All composables (header, board, tiles, overlays)
-│       └── theme/
-│           └── TileColors.kt        # Dark cyberpunk color palette + per-tile styling
-├── res/
-│   ├── drawable/
-│   │   ├── ic_launcher_background.xml   # Adaptive icon background vector
-│   │   └── ic_launcher_foreground.xml   # Adaptive icon foreground vector
-│   ├── mipmap-anydpi-v26/
-│   │   ├── ic_launcher.xml              # Adaptive icon (API 26+)
-│   │   └── ic_launcher_round.xml        # Round adaptive icon (API 26+)
-│   ├── mipmap-mdpi/                     # 48×48 launcher icons
-│   ├── mipmap-hdpi/                     # 72×72 launcher icons
-│   ├── mipmap-xhdpi/                    # 96×96 launcher icons
-│   ├── mipmap-xxhdpi/                   # 144×144 launcher icons
-│   ├── mipmap-xxxhdpi/                  # 192×192 launcher icons
-│   └── values/
-│       ├── strings.xml
-│       └── styles.xml
-├── AndroidManifest.xml
-build.gradle.kts                     # Root build config
-app/build.gradle.kts                 # App module dependencies
-settings.gradle.kts                  # Gradle settings
-gradle.properties                    # Gradle JVM args
+├── app/src/main/
+│   ├── java/com/game/puzzle6767/
+│   │   ├── MainActivity.kt              # Entry point, sets up Compose UI
+│   │   ├── engine/
+│   │   │   └── GameEngine.kt            # Pure game logic (grid, merge, win/loss)
+│   │   ├── viewmodel/
+│   │   │   └── GameViewModel.kt         # MVVM state management, undo, persistence
+│   │   └── ui/
+│   │       ├── GameScreen.kt            # All composables (header, board, tiles, overlays)
+│   │       └── theme/
+│   │           └── TileColors.kt        # Dark cyberpunk color palette + tile styling
+│   ├── res/
+│   │   ├── drawable/                    # Adaptive icon vectors
+│   │   ├── mipmap-*/                    # Launcher icons (mdpi through xxxhdpi)
+│   │   ├── mipmap-anydpi-v26/           # Adaptive icons for API 26+
+│   │   └── values/                      # strings.xml, styles.xml
+│   └── AndroidManifest.xml
+├── docs/
+│   └── privacy-policy.html             # Privacy policy (GitHub Pages)
+├── store-listing/
+│   ├── icon-512x512.png                # Play Store hi-res icon
+│   ├── feature-graphic-1024x500.png    # Play Store feature graphic
+│   └── STORE_LISTING.md               # Full store listing text + metadata
+├── keystore.properties                 # Signing credentials (git-ignored)
+├── build.gradle.kts                    # Root build config
+├── app/build.gradle.kts                # App config with signing + bundling
+├── settings.gradle.kts
+└── gradle.properties
 ```
 
 ---
@@ -93,6 +101,8 @@ gradle.properties                    # Gradle JVM args
 - Dark cyberpunk neon theme with color-coded tiles and glow effects
 - Adaptive launcher icons for all screen densities
 - Portrait and landscape support
+- No ads, no in-app purchases, no data collection
+- Fully offline — no internet required
 
 ### Future Ideas
 - Sound effects and haptic feedback
@@ -114,8 +124,63 @@ gradle.properties                    # Gradle JVM args
 | Min SDK | API 26 (Android 8.0) |
 | Target SDK | API 34 (Android 14) |
 | Build | Gradle 8.5 + AGP 8.2 |
+| Minification | R8 + ProGuard (release) |
 
 **Zero external dependencies** — only AndroidX/Compose libraries.
+
+---
+
+## Release & Play Store Deployment
+
+### Signing Setup
+1. A release keystore is generated at `keystore/release-keystore.jks`
+2. Credentials are in `keystore.properties` (git-ignored — do not commit)
+3. The `app/build.gradle.kts` automatically loads signing config from `keystore.properties`
+
+### Build Release Bundle
+```bash
+./gradlew bundleRelease
+```
+The signed AAB will be at `app/build/outputs/bundle/release/app-release.aab`.
+
+### Play Store Checklist
+| Step | Status |
+|---|---|
+| Google Play Developer account | Required ($25 one-time) |
+| App signed with release key | Configured |
+| App Bundle (.aab) built | `./gradlew bundleRelease` |
+| Hi-res icon (512x512) | `store-listing/icon-512x512.png` |
+| Feature graphic (1024x500) | `store-listing/feature-graphic-1024x500.png` |
+| Screenshots (min 2) | Capture from emulator |
+| Store listing text | `store-listing/STORE_LISTING.md` |
+| Privacy policy hosted | `docs/privacy-policy.html` (GitHub Pages) |
+| Content rating (IARC) | Fill in Play Console |
+| Data safety form | No data collected |
+| Target API compliance | SDK 34 (meets requirement) |
+
+### Privacy Policy Hosting (GitHub Pages)
+1. Go to repo Settings > Pages
+2. Source: **Deploy from a branch**
+3. Branch: **main**, folder: **/docs**
+4. Save — policy will be live at:
+   `https://randan96mk.github.io/6767-game/privacy-policy.html`
+
+### Play Console Upload Steps
+1. Go to [play.google.com/console](https://play.google.com/console)
+2. Create app > fill in app details
+3. Upload AAB to **Internal testing** track first
+4. Complete store listing, content rating, data safety
+5. Test via internal track link
+6. Promote to **Production** when ready
+7. Submit for Google review (1-7 days)
+
+---
+
+## Privacy
+
+This app collects **zero personal data**. No analytics, no ads, no tracking, no network access. Your best score is stored locally on your device only and is deleted when you uninstall the app.
+
+[Full Privacy Policy](docs/privacy-policy.html)
 
 ---
 
