@@ -1,39 +1,24 @@
-# 🎮 2024 Puzzle Game
+# 2048 Puzzle Game
 
-A fresh twist on the classic 2048 — merge **6s** and **7s** to reach **6767**!
+A classic **2048** number puzzle game built with Jetpack Compose and a dark cyberpunk neon theme.
 
-## 🎯 What Makes 6767 Different from 2048?
+## How to Play
 
-| Feature | 2048 | |
-|---|---|---|
-| Starting tiles | 2 and 4 | **6** and **7** |
-| Spawn ratio | 90% → 2, 10% → 4 | 90% → **6**, 10% → **7** |
-| Win target | 2048 | **6767** |
-| Merge tracks | Single (powers of 2) | **Dual tracks!** |
-| Theme | Warm orange/yellow | **Dark cyberpunk neon** |
+- **Swipe** in any direction (up, down, left, right) to slide all tiles
+- When two tiles with the **same number** collide, they **merge into one** (doubled value)
+- A new tile spawns after each move: **2** (90% chance) or **4** (10% chance)
+- Reach the **2048** tile to win!
+- You can keep playing after winning to chase a higher score
 
-### 🧠 The Strategic Twist: Dual Merge Tracks
+### Merge Track
 
-Unlike 2048's single track, 6767 has **two parallel tracks** that NEVER cross:
-
-**6-Track (common, slower):**
 ```
-6 → 12 → 24 → 48 → 96 → 192 → 384 → 768 → 1536 → 3072 → 6144 → 12288 ✓
+2 → 4 → 8 → 16 → 32 → 64 → 128 → 256 → 512 → 1024 → 2048
 ```
-Takes **11 merges** to win (reaches 12288 ≥ 6767)
-
-**7-Track (rare, faster):**
-```
-7 → 14 → 28 → 56 → 112 → 224 → 448 → 896 → 1792 → 3584 → 7168 ✓
-```
-Takes **10 merges** to win (reaches 7168 ≥ 6767)
-
-**The dilemma:** 7-tiles are rare (10% spawn) but reach the goal 1 merge faster.
-Do you hoard 7s in a corner? Or focus on the abundant 6s? That's the strategy!
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Android Studio** Hedgehog (2023.1.1) or newer
@@ -43,75 +28,82 @@ Do you hoard 7s in a corner? Or focus on the abundant 6s? That's the strategy!
 ### Setup
 1. Open Android Studio
 2. Select **"Open an existing project"**
-3. Navigate to the `6767-game/` folder
+3. Navigate to the project folder
 4. Wait for Gradle sync to complete
-5. Click **Run ▶️** (select a device/emulator)
+5. Click **Run** (select a device/emulator)
 
 ### Build APK
 ```bash
-cd 6767-game
 ./gradlew assembleRelease
 ```
-APK will be at: `app/build/outputs/apk/release/app-release.apk`
+APK output: `app/build/outputs/apk/release/app-release.apk`
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-6767-game/
-├── app/src/main/java/com/game/puzzle6767/
-│   ├── MainActivity.kt              # Entry point
+app/src/main/
+├── java/com/game/puzzle6767/
+│   ├── MainActivity.kt              # Entry point, sets up Compose UI
 │   ├── engine/
-│   │   └── GameEngine.kt            # Pure game logic (testable)
+│   │   └── GameEngine.kt            # Pure game logic (grid, merge, win/loss detection)
 │   ├── viewmodel/
-│   │   └── GameViewModel.kt         # State management + undo
+│   │   └── GameViewModel.kt         # MVVM state management, undo, score persistence
 │   └── ui/
-│       ├── GameScreen.kt            # All composables (screen, board, tiles, overlays)
+│       ├── GameScreen.kt            # All composables (header, board, tiles, overlays)
 │       └── theme/
-│           └── TileColors.kt        # Color palette + tile styling
-├── app/src/main/res/
+│           └── TileColors.kt        # Dark cyberpunk color palette + per-tile styling
+├── res/
+│   ├── drawable/
+│   │   ├── ic_launcher_background.xml   # Adaptive icon background vector
+│   │   └── ic_launcher_foreground.xml   # Adaptive icon foreground vector
+│   ├── mipmap-anydpi-v26/
+│   │   ├── ic_launcher.xml              # Adaptive icon (API 26+)
+│   │   └── ic_launcher_round.xml        # Round adaptive icon (API 26+)
+│   ├── mipmap-mdpi/                     # 48×48 launcher icons
+│   ├── mipmap-hdpi/                     # 72×72 launcher icons
+│   ├── mipmap-xhdpi/                    # 96×96 launcher icons
+│   ├── mipmap-xxhdpi/                   # 144×144 launcher icons
+│   ├── mipmap-xxxhdpi/                  # 192×192 launcher icons
 │   └── values/
 │       ├── strings.xml
 │       └── styles.xml
-├── build.gradle.kts                  # Root build
-├── app/build.gradle.kts              # App dependencies
-├── settings.gradle.kts
-├── gradle.properties
-└── README.md
+├── AndroidManifest.xml
+build.gradle.kts                     # Root build config
+app/build.gradle.kts                 # App module dependencies
+settings.gradle.kts                  # Gradle settings
+gradle.properties                    # Gradle JVM args
 ```
 
 ---
 
-## 🎨 Features
+## Features
 
-### MVP (Included)
-- ✅ 4×4 game grid with swipe controls
-- ✅ Dual-track merge system (6s and 7s)
-- ✅ Score tracking (current + all-time best)
-- ✅ Best score persistence (SharedPreferences)
-- ✅ Win detection (tile ≥ 6767)
-- ✅ Game Over detection
-- ✅ "Continue playing" after winning
-- ✅ Undo last move
-- ✅ Tile pop animations
-- ✅ Win/Game Over overlays with animations
-- ✅ Dark cyberpunk neon theme
-- ✅ Move counter
-- ✅ Color-coded tiles (different colors per track)
+- 4x4 game grid with swipe gesture controls
+- Classic 2048 merge logic (same tiles double on collision)
+- Tile spawn: 2 (90%) or 4 (10%)
+- Win detection at 2048, with option to continue playing
+- Game Over detection (no valid moves remaining)
+- Score tracking (current + all-time best via SharedPreferences)
+- Undo last move (single step)
+- Tile pop animations on spawn/merge
+- Win and Game Over overlay screens with fade animations
+- Move counter
+- Dark cyberpunk neon theme with color-coded tiles and glow effects
+- Adaptive launcher icons for all screen densities
+- Portrait and landscape support
 
 ### Future Ideas
-- 🔮 Sound effects & haptic feedback
-- 🔮 Board size options (3×3, 5×5)
-- 🔮 Daily challenges
-- 🔮 Google Play leaderboard
-- 🔮 Share score as image
-- 🔮 AdMob integration
-- 🔮 Dark/Light theme toggle
+- Sound effects and haptic feedback
+- Board size options (3x3, 5x5)
+- Daily challenges
+- Google Play leaderboard
+- Share score as image
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |---|---|
@@ -127,6 +119,6 @@ APK will be at: `app/build/outputs/apk/release/app-release.apk`
 
 ---
 
-## 📄 License
+## License
 
 MIT — Free to use, modify, and distribute.
