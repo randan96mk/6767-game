@@ -1,39 +1,24 @@
-# 🎮 2024 Puzzle Game
+# 2048 Puzzle Game
 
-A fresh twist on the classic 2048 — merge **6s** and **7s** to reach **6767**!
+A classic **2048** number puzzle game built with Jetpack Compose and a dark cyberpunk neon theme.
 
-## 🎯 What Makes 6767 Different from 2048?
+## How to Play
 
-| Feature | 2048 | |
-|---|---|---|
-| Starting tiles | 2 and 4 | **6** and **7** |
-| Spawn ratio | 90% → 2, 10% → 4 | 90% → **6**, 10% → **7** |
-| Win target | 2048 | **6767** |
-| Merge tracks | Single (powers of 2) | **Dual tracks!** |
-| Theme | Warm orange/yellow | **Dark cyberpunk neon** |
+- **Swipe** in any direction (up, down, left, right) to slide all tiles
+- When two tiles with the **same number** collide, they **merge into one** (doubled value)
+- A new tile spawns after each move: **2** (90% chance) or **4** (10% chance)
+- Reach the **2048** tile to win!
+- You can keep playing after winning to chase a higher score
 
-### 🧠 The Strategic Twist: Dual Merge Tracks
+### Merge Track
 
-Unlike 2048's single track, 6767 has **two parallel tracks** that NEVER cross:
-
-**6-Track (common, slower):**
 ```
-6 → 12 → 24 → 48 → 96 → 192 → 384 → 768 → 1536 → 3072 → 6144 → 12288 ✓
+2 → 4 → 8 → 16 → 32 → 64 → 128 → 256 → 512 → 1024 → 2048
 ```
-Takes **11 merges** to win (reaches 12288 ≥ 6767)
-
-**7-Track (rare, faster):**
-```
-7 → 14 → 28 → 56 → 112 → 224 → 448 → 896 → 1792 → 3584 → 7168 ✓
-```
-Takes **10 merges** to win (reaches 7168 ≥ 6767)
-
-**The dilemma:** 7-tiles are rare (10% spawn) but reach the goal 1 merge faster.
-Do you hoard 7s in a corner? Or focus on the abundant 6s? That's the strategy!
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Android Studio** Hedgehog (2023.1.1) or newer
@@ -43,75 +28,92 @@ Do you hoard 7s in a corner? Or focus on the abundant 6s? That's the strategy!
 ### Setup
 1. Open Android Studio
 2. Select **"Open an existing project"**
-3. Navigate to the `6767-game/` folder
+3. Navigate to the project folder
 4. Wait for Gradle sync to complete
-5. Click **Run ▶️** (select a device/emulator)
+5. Click **Run** (select a device/emulator)
 
-### Build APK
+### Build Debug APK
 ```bash
-cd 6767-game
+./gradlew assembleDebug
+```
+
+### Build Release AAB (for Play Store)
+```bash
+./gradlew bundleRelease
+```
+AAB output: `app/build/outputs/bundle/release/app-release.aab`
+
+### Build Release APK
+```bash
 ./gradlew assembleRelease
 ```
-APK will be at: `app/build/outputs/apk/release/app-release.apk`
+APK output: `app/build/outputs/apk/release/app-release.apk`
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-6767-game/
-├── app/src/main/java/com/game/puzzle6767/
-│   ├── MainActivity.kt              # Entry point
-│   ├── engine/
-│   │   └── GameEngine.kt            # Pure game logic (testable)
-│   ├── viewmodel/
-│   │   └── GameViewModel.kt         # State management + undo
-│   └── ui/
-│       ├── GameScreen.kt            # All composables (screen, board, tiles, overlays)
-│       └── theme/
-│           └── TileColors.kt        # Color palette + tile styling
-├── app/src/main/res/
-│   └── values/
-│       ├── strings.xml
-│       └── styles.xml
-├── build.gradle.kts                  # Root build
-├── app/build.gradle.kts              # App dependencies
+├── app/src/main/
+│   ├── java/com/game/puzzle2048/
+│   │   ├── MainActivity.kt              # Entry point, sets up Compose UI
+│   │   ├── engine/
+│   │   │   └── GameEngine.kt            # Pure game logic (grid, merge, win/loss)
+│   │   ├── viewmodel/
+│   │   │   └── GameViewModel.kt         # MVVM state management, undo, persistence
+│   │   └── ui/
+│   │       ├── GameScreen.kt            # All composables (header, board, tiles, overlays)
+│   │       └── theme/
+│   │           └── TileColors.kt        # Dark cyberpunk color palette + tile styling
+│   ├── res/
+│   │   ├── drawable/                    # Adaptive icon vectors
+│   │   ├── mipmap-*/                    # Launcher icons (mdpi through xxxhdpi)
+│   │   ├── mipmap-anydpi-v26/           # Adaptive icons for API 26+
+│   │   └── values/                      # strings.xml, styles.xml
+│   └── AndroidManifest.xml
+├── docs/
+│   └── privacy-policy.html             # Privacy policy (GitHub Pages)
+├── store-listing/
+│   ├── icon-512x512.png                # Play Store hi-res icon
+│   ├── feature-graphic-1024x500.png    # Play Store feature graphic
+│   └── STORE_LISTING.md               # Full store listing text + metadata
+├── keystore.properties                 # Signing credentials (git-ignored)
+├── build.gradle.kts                    # Root build config
+├── app/build.gradle.kts                # App config with signing + bundling
 ├── settings.gradle.kts
-├── gradle.properties
-└── README.md
+└── gradle.properties
 ```
 
 ---
 
-## 🎨 Features
+## Features
 
-### MVP (Included)
-- ✅ 4×4 game grid with swipe controls
-- ✅ Dual-track merge system (6s and 7s)
-- ✅ Score tracking (current + all-time best)
-- ✅ Best score persistence (SharedPreferences)
-- ✅ Win detection (tile ≥ 6767)
-- ✅ Game Over detection
-- ✅ "Continue playing" after winning
-- ✅ Undo last move
-- ✅ Tile pop animations
-- ✅ Win/Game Over overlays with animations
-- ✅ Dark cyberpunk neon theme
-- ✅ Move counter
-- ✅ Color-coded tiles (different colors per track)
+- 4x4 game grid with swipe gesture controls
+- Classic 2048 merge logic (same tiles double on collision)
+- Tile spawn: 2 (90%) or 4 (10%)
+- Win detection at 2048, with option to continue playing
+- Game Over detection (no valid moves remaining)
+- Score tracking (current + all-time best via SharedPreferences)
+- Undo last move (single step)
+- Tile pop animations on spawn/merge
+- Win and Game Over overlay screens with fade animations
+- Move counter
+- Dark cyberpunk neon theme with color-coded tiles and glow effects
+- Adaptive launcher icons for all screen densities
+- Portrait and landscape support
+- No ads, no in-app purchases, no data collection
+- Fully offline — no internet required
 
 ### Future Ideas
-- 🔮 Sound effects & haptic feedback
-- 🔮 Board size options (3×3, 5×5)
-- 🔮 Daily challenges
-- 🔮 Google Play leaderboard
-- 🔮 Share score as image
-- 🔮 AdMob integration
-- 🔮 Dark/Light theme toggle
+- Sound effects and haptic feedback
+- Board size options (3x3, 5x5)
+- Daily challenges
+- Google Play leaderboard
+- Share score as image
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |---|---|
@@ -122,11 +124,66 @@ APK will be at: `app/build/outputs/apk/release/app-release.apk`
 | Min SDK | API 26 (Android 8.0) |
 | Target SDK | API 34 (Android 14) |
 | Build | Gradle 8.5 + AGP 8.2 |
+| Minification | R8 + ProGuard (release) |
 
 **Zero external dependencies** — only AndroidX/Compose libraries.
 
 ---
 
-## 📄 License
+## Release & Play Store Deployment
+
+### Signing Setup
+1. A release keystore is generated at `keystore/release-keystore.jks`
+2. Credentials are in `keystore.properties` (git-ignored — do not commit)
+3. The `app/build.gradle.kts` automatically loads signing config from `keystore.properties`
+
+### Build Release Bundle
+```bash
+./gradlew bundleRelease
+```
+The signed AAB will be at `app/build/outputs/bundle/release/app-release.aab`.
+
+### Play Store Checklist
+| Step | Status |
+|---|---|
+| Google Play Developer account | Required ($25 one-time) |
+| App signed with release key | Configured |
+| App Bundle (.aab) built | `./gradlew bundleRelease` |
+| Hi-res icon (512x512) | `store-listing/icon-512x512.png` |
+| Feature graphic (1024x500) | `store-listing/feature-graphic-1024x500.png` |
+| Screenshots (min 2) | Capture from emulator |
+| Store listing text | `store-listing/STORE_LISTING.md` |
+| Privacy policy hosted | `docs/privacy-policy.html` (GitHub Pages) |
+| Content rating (IARC) | Fill in Play Console |
+| Data safety form | No data collected |
+| Target API compliance | SDK 34 (meets requirement) |
+
+### Privacy Policy Hosting (GitHub Pages)
+1. Go to repo Settings > Pages
+2. Source: **Deploy from a branch**
+3. Branch: **main**, folder: **/docs**
+4. Save — policy will be live at:
+   `https://randan96mk.github.io/6767-game/privacy-policy.html`
+
+### Play Console Upload Steps
+1. Go to [play.google.com/console](https://play.google.com/console)
+2. Create app > fill in app details
+3. Upload AAB to **Internal testing** track first
+4. Complete store listing, content rating, data safety
+5. Test via internal track link
+6. Promote to **Production** when ready
+7. Submit for Google review (1-7 days)
+
+---
+
+## Privacy
+
+This app collects **zero personal data**. No analytics, no ads, no tracking, no network access. Your best score is stored locally on your device only and is deleted when you uninstall the app.
+
+[Full Privacy Policy](docs/privacy-policy.html)
+
+---
+
+## License
 
 MIT — Free to use, modify, and distribute.

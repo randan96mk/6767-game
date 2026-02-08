@@ -1,4 +1,4 @@
-package com.game.puzzle6767.engine
+package com.game.puzzle2048.engine
 
 import kotlin.random.Random
 
