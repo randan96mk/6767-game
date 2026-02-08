@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -47,7 +45,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.game.puzzle6767.engine.GameEngine.Direction
-import com.game.puzzle6767.ui.theme.*
+import com.game.puzzle6767.ui.theme.AccentCyan
+import com.game.puzzle6767.ui.theme.AccentMagenta
+import com.game.puzzle6767.ui.theme.ButtonBg
+import com.game.puzzle6767.ui.theme.GridBackground
+import com.game.puzzle6767.ui.theme.HeaderTextColor
+import com.game.puzzle6767.ui.theme.OverlayBg
+import com.game.puzzle6767.ui.theme.ScoreBoxBg
+import com.game.puzzle6767.ui.theme.ScreenBackground
+import com.game.puzzle6767.ui.theme.SubTextColor
+import com.game.puzzle6767.ui.theme.getTileFontSize
+import com.game.puzzle6767.ui.theme.getTileStyle
 import com.game.puzzle6767.viewmodel.GameStatus
 import com.game.puzzle6767.viewmodel.GameViewModel
 import kotlin.math.abs
