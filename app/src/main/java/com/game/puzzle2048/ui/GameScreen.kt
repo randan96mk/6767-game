@@ -1,4 +1,4 @@
-package com.game.puzzle6767.ui
+package com.game.puzzle2048.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -46,10 +46,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.game.puzzle6767.engine.GameEngine.Direction
-import com.game.puzzle6767.ui.theme.*
-import com.game.puzzle6767.viewmodel.GameStatus
-import com.game.puzzle6767.viewmodel.GameViewModel
+import com.game.puzzle2048.engine.GameEngine.Direction
+import com.game.puzzle2048.ui.theme.*
+import com.game.puzzle2048.viewmodel.GameStatus
+import com.game.puzzle2048.viewmodel.GameViewModel
 import kotlin.math.abs
 
 // ═══════════════════════════════════════════════════════════════

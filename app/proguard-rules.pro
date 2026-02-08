@@ -27,10 +27,10 @@
 -keepattributes RuntimeVisibleAnnotations
 
 # ─── App-specific: keep GameEngine and data classes ──────
--keep class com.game.puzzle6767.engine.GameEngine { *; }
--keep class com.game.puzzle6767.engine.GameEngine$* { *; }
--keep class com.game.puzzle6767.viewmodel.GameState { *; }
--keep class com.game.puzzle6767.viewmodel.GameStatus { *; }
+-keep class com.game.puzzle2048.engine.GameEngine { *; }
+-keep class com.game.puzzle2048.engine.GameEngine$* { *; }
+-keep class com.game.puzzle2048.viewmodel.GameState { *; }
+-keep class com.game.puzzle2048.viewmodel.GameStatus { *; }
 
 # ─── Remove logging in release ───────────────────────────
 -assumenosideeffects class android.util.Log {

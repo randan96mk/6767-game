@@ -13,11 +13,11 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.game.puzzle6767"
+    namespace = "com.game.puzzle2048"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.game.puzzle6767"
+        applicationId = "com.game.puzzle2048"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

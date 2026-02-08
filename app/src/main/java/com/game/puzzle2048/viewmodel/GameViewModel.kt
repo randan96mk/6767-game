@@ -1,10 +1,10 @@
-package com.game.puzzle6767.viewmodel
+package com.game.puzzle2048.viewmodel
 
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
-import com.game.puzzle6767.engine.GameEngine
-import com.game.puzzle6767.engine.GameEngine.Direction
+import com.game.puzzle2048.engine.GameEngine
+import com.game.puzzle2048.engine.GameEngine.Direction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +24,7 @@ data class GameState(
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val prefs = application.getSharedPreferences("game_6767", Context.MODE_PRIVATE)
+    private val prefs = application.getSharedPreferences("game_2048", Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
