@@ -1,4 +1,4 @@
-package com.game.puzzle2048.ui.theme
+package com.mkggames.puzzle2048.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
