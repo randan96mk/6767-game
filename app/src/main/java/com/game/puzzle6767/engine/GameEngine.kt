@@ -3,22 +3,18 @@ package com.game.puzzle6767.engine
 import kotlin.random.Random
 
 /**
- * 6767 Puzzle Game Engine — Dual-Track Merge System.
+ * Classic 2048 Game Engine.
  *
- * - Spawn tiles: 6 (90%) or 7 (10%)
- * - Same tiles merge by doubling: 6+6=12, 7+7=14, etc.
- * - Two parallel merge tracks that NEVER cross:
- *
- *   6-Track: 6 → 12 → 24 → 48 → 96 → 192 → 384 → 768 → 1536 → 3072 → 6144 → 12288
- *   7-Track: 7 → 14 → 28 → 56 → 112 → 224 → 448 → 896 → 1792 → 3584 → 7168
- *
- * - Win when ANY tile reaches >= 6767
- * - Player can continue beyond 6767 for score chasing
+ * - Spawn tiles: 2 (90%) or 4 (10%)
+ * - Same tiles merge by doubling: 2+2=4, 4+4=8, etc.
+ * - Single merge track: 2 → 4 → 8 → 16 → ... → 1024 → 2048
+ * - Win when ANY tile reaches 2048
+ * - Player can continue beyond 2048 for score chasing
  */
 object GameEngine {
 
     const val GRID_SIZE = 4
-    const val WIN_TARGET = 6767
+    const val WIN_TARGET = 2048
 
     fun createEmptyGrid(): Array<IntArray> {
         return Array(GRID_SIZE) { IntArray(GRID_SIZE) { 0 } }
@@ -30,7 +26,7 @@ object GameEngine {
 
     /**
      * Spawns a new tile on a random empty cell.
-     * Spawn values: 6 (90%) or 7 (10%).
+     * Spawn values: 2 (90%) or 4 (10%).
      */
     fun spawnTile(grid: Array<IntArray>): Pair<Array<IntArray>, Boolean> {
         val emptyCells = mutableListOf<Pair<Int, Int>>()
@@ -43,7 +39,7 @@ object GameEngine {
 
         val (r, c) = emptyCells[Random.nextInt(emptyCells.size)]
         val newGrid = copyGrid(grid)
-        newGrid[r][c] = if (Random.nextFloat() < 0.9f) 6 else 7
+        newGrid[r][c] = if (Random.nextFloat() < 0.9f) 2 else 4
 
         return newGrid to true
     }
@@ -62,11 +58,8 @@ object GameEngine {
      *  3. A merged tile cannot merge again in the same move
      *  4. Pad with zeros to maintain length
      *
-     * Because 6-track and 7-track values never overlap, only same-track
-     * tiles can merge. No additional track validation is needed.
-     *
-     * Example: [6, 6, 7, 7] → [12, 14, 0, 0] (score +12 +14 = +26)
-     * Example: [6, 6, 6, 6] → [12, 12, 0, 0] (NOT [24, 0, 0, 0])
+     * Example: [2, 2, 4, 4] → [4, 8, 0, 0] (score +4 +8 = +12)
+     * Example: [2, 2, 2, 2] → [4, 4, 0, 0] (NOT [8, 0, 0, 0])
      */
     fun slideLine(line: IntArray): LineResult {
         var score = 0
