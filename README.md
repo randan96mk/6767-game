@@ -55,7 +55,7 @@ APK output: `app/build/outputs/apk/release/app-release.apk`
 
 ```
 ├── app/src/main/
-│   ├── java/com/game/puzzle2048/
+│   ├── java/com/mkggames/puzzle2048/
 │   │   ├── MainActivity.kt              # Entry point, sets up Compose UI
 │   │   ├── engine/
 │   │   │   └── GameEngine.kt            # Pure game logic (grid, merge, win/loss)

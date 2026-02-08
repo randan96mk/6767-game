@@ -1,10 +1,10 @@
-package com.game.puzzle2048.viewmodel
+package com.mkggames.puzzle2048.viewmodel
 
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
-import com.game.puzzle2048.engine.GameEngine
-import com.game.puzzle2048.engine.GameEngine.Direction
+import com.mkggames.puzzle2048.engine.GameEngine
+import com.mkggames.puzzle2048.engine.GameEngine.Direction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
