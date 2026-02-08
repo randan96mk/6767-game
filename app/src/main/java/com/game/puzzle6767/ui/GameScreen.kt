@@ -140,14 +140,14 @@ fun GameScreen(viewModel: GameViewModel) {
 fun GameHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "6767",
+            text = "2048",
             fontSize = 52.sp,
             fontWeight = FontWeight.Black,
             color = AccentCyan,
             letterSpacing = 4.sp
         )
         Text(
-            text = "MERGE 6s & 7s • REACH 6767",
+            text = "SWIPE • MERGE • REACH 2048",
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             color = SubTextColor,
@@ -396,7 +396,7 @@ fun GameFooter(moveCount: Int) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Swipe to merge tiles • 6 spawns (90%) • 7 spawns (10%)",
+            text = "Swipe to merge tiles • 2 spawns (90%) • 4 spawns (10%)",
             fontSize = 11.sp,
             color = SubTextColor,
             textAlign = TextAlign.Center
@@ -451,7 +451,7 @@ fun WinOverlay(score: Int, onContinue: () -> Unit, onNewGame: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "You reached 6767!",
+                text = "You reached 2048!",
                 fontSize = 16.sp,
                 color = SubTextColor
             )

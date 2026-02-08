@@ -3,7 +3,7 @@ package com.game.puzzle6767.engine
 import kotlin.random.Random
 
 /**
- * 2024 Number Game Engine — Classic 2048 Logic.
+ * Classic 2048 Game Engine.
  *
  * - Spawn tiles: 2 (90%) or 4 (10%)
  * - Same tiles merge by doubling: 2+2=4, 4+4=8, etc.
@@ -26,7 +26,7 @@ object GameEngine {
 
     /**
      * Spawns a new tile on a random empty cell.
-     * Spawn values: 2 (90%) or 4 (10%) — classic 2048 rules.
+     * Spawn values: 2 (90%) or 4 (10%).
      */
     fun spawnTile(grid: Array<IntArray>): Pair<Array<IntArray>, Boolean> {
         val emptyCells = mutableListOf<Pair<Int, Int>>()
