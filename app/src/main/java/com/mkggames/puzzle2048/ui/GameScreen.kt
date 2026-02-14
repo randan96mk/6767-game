@@ -58,6 +58,7 @@ import com.mkggames.puzzle2048.engine.GameEngine.Direction
 import com.mkggames.puzzle2048.ui.theme.*
 import com.mkggames.puzzle2048.viewmodel.GameStatus
 import com.mkggames.puzzle2048.viewmodel.GameViewModel
+import launch
 import kotlin.math.abs
 
 // ═══════════════════════════════════════════════════════════════
@@ -409,7 +410,7 @@ fun TileCell(
     LaunchedEffect(isMerged, mergeGeneration) {
         if (isMerged && value != 0) {
             // Run scale overshoot and glow pulse in parallel
-            kotlinx.coroutines.launch {
+            launch {
                 mergeScale.snapTo(1f)
                 mergeScale.animateTo(
                     targetValue = 1.25f,
@@ -423,7 +424,7 @@ fun TileCell(
                     )
                 )
             }
-            kotlinx.coroutines.launch {
+            launch {
                 mergeGlow.snapTo(0.8f)
                 mergeGlow.animateTo(
                     targetValue = 0f,
