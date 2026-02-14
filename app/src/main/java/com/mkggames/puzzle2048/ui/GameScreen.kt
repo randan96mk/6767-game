@@ -87,7 +87,11 @@ fun GameScreen(viewModel: GameViewModel) {
             soundManager.playMergeSound(event.maxMergedValue)
         }
         if (settings.hapticEnabled) {
-            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            view.isHapticFeedbackEnabled = true
+            view.performHapticFeedback(
+                HapticFeedbackConstants.LONG_PRESS,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+            )
         }
         viewModel.consumeMergeEvent()
     }
@@ -128,6 +132,8 @@ fun GameScreen(viewModel: GameViewModel) {
                 grid = state.grid,
                 isLight = isLight,
                 colors = colors,
+                mergedPositions = state.mergedPositions,
+                mergeGeneration = state.mergeGeneration,
                 onSwipe = { direction -> viewModel.onSwipe(direction) }
             )
 
@@ -289,7 +295,14 @@ fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, c
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun SwipeableGameBoard(grid: Array<IntArray>, isLight: Boolean, colors: AppColors, onSwipe: (Direction) -> Unit) {
+fun SwipeableGameBoard(
+    grid: Array<IntArray>,
+    isLight: Boolean,
+    colors: AppColors,
+    mergedPositions: Set<Pair<Int, Int>> = emptySet(),
+    mergeGeneration: Int = 0,
+    onSwipe: (Direction) -> Unit
+) {
     val density = LocalDensity.current
     val swipeThreshold = with(density) { 40.dp.toPx() }
 
@@ -345,7 +358,13 @@ fun SwipeableGameBoard(grid: Array<IntArray>, isLight: Boolean, colors: AppColor
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     for (col in 0 until 4) {
-                        TileCell(value = grid[row][col], isLight = isLight, modifier = Modifier.weight(1f))
+                        TileCell(
+                            value = grid[row][col],
+                            isLight = isLight,
+                            isMerged = (row to col) in mergedPositions,
+                            mergeGeneration = mergeGeneration,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -358,15 +377,21 @@ fun SwipeableGameBoard(grid: Array<IntArray>, isLight: Boolean, colors: AppColor
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun TileCell(value: Int, isLight: Boolean = false, modifier: Modifier = Modifier) {
+fun TileCell(
+    value: Int,
+    isLight: Boolean = false,
+    isMerged: Boolean = false,
+    mergeGeneration: Int = 0,
+    modifier: Modifier = Modifier
+) {
     val style = getTileStyle(value, isLight)
     val fontSize = getTileFontSize(value)
 
-    // Pop animation for new/merged tiles
-    val scale = remember(value) { Animatable(if (value != 0) 0.7f else 1f) }
+    // Pop animation for new tiles (appear from small)
+    val spawnScale = remember(value) { Animatable(if (value != 0) 0.7f else 1f) }
     LaunchedEffect(value) {
         if (value != 0) {
-            scale.animateTo(
+            spawnScale.animateTo(
                 targetValue = 1f,
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -376,20 +401,58 @@ fun TileCell(value: Int, isLight: Boolean = false, modifier: Modifier = Modifier
         }
     }
 
+    // Merge animation: scale overshoot 1.0 -> 1.25 -> 1.0
+    val mergeScale = remember { Animatable(1f) }
+    // Merge glow pulse: alpha 0 -> 1 -> 0
+    val mergeGlow = remember { Animatable(0f) }
+
+    LaunchedEffect(isMerged, mergeGeneration) {
+        if (isMerged && value != 0) {
+            // Run scale overshoot and glow pulse in parallel
+            kotlinx.coroutines.launch {
+                mergeScale.snapTo(1f)
+                mergeScale.animateTo(
+                    targetValue = 1.25f,
+                    animationSpec = tween(durationMillis = 120)
+                )
+                mergeScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+            }
+            kotlinx.coroutines.launch {
+                mergeGlow.snapTo(0.8f)
+                mergeGlow.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 500)
+                )
+            }
+        }
+    }
+
+    val combinedScale = spawnScale.value * mergeScale.value
+    val glowAlpha = mergeGlow.value
+    val glowColor = style.glowColor ?: style.textColor.copy(alpha = 0.4f)
+
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = combinedScale
+                scaleY = combinedScale
             }
             .then(
-                if (style.glowColor != null && value != 0) {
+                if ((style.glowColor != null && value != 0) || glowAlpha > 0f) {
+                    val elevation = if (glowAlpha > 0f) (8 + (16 * glowAlpha)).dp else 8.dp
+                    val effectiveGlow = if (glowAlpha > 0f) glowColor.copy(alpha = glowAlpha) else style.glowColor ?: Color.Transparent
                     Modifier.shadow(
-                        elevation = 8.dp,
+                        elevation = elevation,
                         shape = RoundedCornerShape(10.dp),
-                        ambientColor = style.glowColor,
-                        spotColor = style.glowColor
+                        ambientColor = effectiveGlow,
+                        spotColor = effectiveGlow
                     )
                 } else Modifier
             )
@@ -397,6 +460,17 @@ fun TileCell(value: Int, isLight: Boolean = false, modifier: Modifier = Modifier
             .background(style.background),
         contentAlignment = Alignment.Center
     ) {
+        // Glow overlay for merge flash
+        if (glowAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        glowColor.copy(alpha = glowAlpha * 0.3f),
+                        RoundedCornerShape(10.dp)
+                    )
+            )
+        }
         if (value != 0) {
             Text(
                 text = value.toString(),
