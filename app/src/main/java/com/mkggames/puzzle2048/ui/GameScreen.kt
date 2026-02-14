@@ -58,7 +58,7 @@ import com.mkggames.puzzle2048.engine.GameEngine.Direction
 import com.mkggames.puzzle2048.ui.theme.*
 import com.mkggames.puzzle2048.viewmodel.GameStatus
 import com.mkggames.puzzle2048.viewmodel.GameViewModel
-import launch
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 // ═══════════════════════════════════════════════════════════════
