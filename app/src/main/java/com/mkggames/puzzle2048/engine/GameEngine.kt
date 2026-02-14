@@ -46,7 +46,8 @@ object GameEngine {
 
     data class LineResult(
         val line: IntArray,
-        val score: Int
+        val score: Int,
+        val mergedIndices: Set<Int> = emptySet()
     )
 
     /**
@@ -65,11 +66,13 @@ object GameEngine {
         var score = 0
         val tiles = line.filter { it != 0 }.toMutableList()
         val merged = mutableListOf<Int>()
+        val mergedIndices = mutableSetOf<Int>()
         var i = 0
 
         while (i < tiles.size) {
             if (i + 1 < tiles.size && tiles[i] == tiles[i + 1]) {
                 val mergedValue = tiles[i] * 2
+                mergedIndices.add(merged.size)
                 merged.add(mergedValue)
                 score += mergedValue
                 i += 2
@@ -80,7 +83,7 @@ object GameEngine {
         }
 
         while (merged.size < GRID_SIZE) merged.add(0)
-        return LineResult(merged.toIntArray(), score)
+        return LineResult(merged.toIntArray(), score, mergedIndices)
     }
 
     enum class Direction { UP, DOWN, LEFT, RIGHT }
@@ -88,13 +91,15 @@ object GameEngine {
     data class MoveResult(
         val grid: Array<IntArray>,
         val score: Int,
-        val moved: Boolean
+        val moved: Boolean,
+        val mergedPositions: Set<Pair<Int, Int>> = emptySet()
     )
 
     fun move(grid: Array<IntArray>, direction: Direction): MoveResult {
         var totalScore = 0
         val newGrid = createEmptyGrid()
         var moved = false
+        val mergedPositions = mutableSetOf<Pair<Int, Int>>()
 
         for (i in 0 until GRID_SIZE) {
             val line = extractLine(grid, i, direction)
@@ -102,9 +107,19 @@ object GameEngine {
             totalScore += result.score
             if (!line.contentEquals(result.line)) moved = true
             placeLine(newGrid, result.line, i, direction)
+
+            for (idx in result.mergedIndices) {
+                val pos = when (direction) {
+                    Direction.LEFT -> i to idx
+                    Direction.RIGHT -> i to (GRID_SIZE - 1 - idx)
+                    Direction.UP -> idx to i
+                    Direction.DOWN -> (GRID_SIZE - 1 - idx) to i
+                }
+                mergedPositions.add(pos)
+            }
         }
 
-        return MoveResult(newGrid, totalScore, moved)
+        return MoveResult(newGrid, totalScore, moved, mergedPositions)
     }
 
     private fun extractLine(grid: Array<IntArray>, index: Int, direction: Direction): IntArray {
