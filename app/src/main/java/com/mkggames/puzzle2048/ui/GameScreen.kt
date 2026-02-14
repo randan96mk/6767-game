@@ -1,6 +1,10 @@
 package com.mkggames.puzzle2048.ui
 
-import android.view.HapticFeedbackConstants
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -77,9 +81,19 @@ fun GameScreen(viewModel: GameViewModel) {
 
     var showSettings by remember { mutableStateOf(false) }
 
-    // Sound manager
+    // Sound manager + vibrator
     val view = LocalView.current
-    val soundManager = remember { SoundManager(view.context) }
+    val context = view.context
+    val soundManager = remember { SoundManager(context) }
+    val vibrator = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val mgr = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            mgr.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
 
     // Handle merge events: sound + haptic
     LaunchedEffect(mergeEvent) {
@@ -88,11 +102,14 @@ fun GameScreen(viewModel: GameViewModel) {
             soundManager.playMergeSound(event.maxMergedValue)
         }
         if (settings.hapticEnabled) {
-            view.isHapticFeedbackEnabled = true
-            view.performHapticFeedback(
-                HapticFeedbackConstants.LONG_PRESS,
-                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(50)
+            }
         }
         viewModel.consumeMergeEvent()
     }
