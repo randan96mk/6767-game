@@ -19,7 +19,15 @@ data class GameState(
     val bestScore: Int = 0,
     val gameStatus: GameStatus = GameStatus.PLAYING,
     val hasWonBefore: Boolean = false,  // allows continue after winning
-    val moveCount: Int = 0
+    val moveCount: Int = 0,
+    val mergedPositions: Set<Pair<Int, Int>> = emptySet(),
+    val mergeGeneration: Int = 0
+)
+
+data class SettingsState(
+    val soundEnabled: Boolean = true,
+    val hapticEnabled: Boolean = true,
+    val lightThemeEnabled: Boolean = false
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,6 +37,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
 
+    private val _settingsState = MutableStateFlow(SettingsState())
+    val settingsState: StateFlow<SettingsState> = _settingsState.asStateFlow()
+
     // Undo support: store previous state
     private var previousGrid: Array<IntArray>? = null
     private var previousScore: Int = 0
@@ -37,8 +48,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _canUndoState = MutableStateFlow(false)
     val canUndoState: StateFlow<Boolean> = _canUndoState.asStateFlow()
 
+    // Merge event for triggering sound/haptic
+    private val _mergeEvent = MutableStateFlow<MergeEvent?>(null)
+    val mergeEvent: StateFlow<MergeEvent?> = _mergeEvent.asStateFlow()
+
+    data class MergeEvent(
+        val maxMergedValue: Int,
+        val mergeCount: Int,
+        val generation: Int
+    )
+
     init {
         loadBestScore()
+        loadSettings()
         startNewGame()
     }
 
@@ -62,7 +84,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             bestScore = _state.value.bestScore,
             gameStatus = GameStatus.PLAYING,
             hasWonBefore = false,
-            moveCount = 0
+            moveCount = 0,
+            mergedPositions = emptySet(),
+            mergeGeneration = 0
         )
     }
 
@@ -102,12 +126,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> GameStatus.PLAYING
         }
 
+        // Emit merge event if merges occurred
+        if (moveResult.mergedPositions.isNotEmpty()) {
+            val maxValue = moveResult.mergedPositions.maxOf { (r, c) -> moveResult.grid[r][c] }
+            _mergeEvent.value = MergeEvent(
+                maxMergedValue = maxValue,
+                mergeCount = moveResult.mergedPositions.size,
+                generation = current.mergeGeneration + 1
+            )
+        }
+
         _state.value = current.copy(
             grid = newGrid,
             score = newScore,
             bestScore = newBest,
             gameStatus = status,
-            moveCount = current.moveCount + 1
+            moveCount = current.moveCount + 1,
+            mergedPositions = moveResult.mergedPositions,
+            mergeGeneration = current.mergeGeneration + 1
         )
     }
 
@@ -129,12 +165,37 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             grid = previousGrid!!,
             score = previousScore,
             gameStatus = GameStatus.PLAYING,
-            moveCount = current.moveCount - 1
+            moveCount = current.moveCount - 1,
+            mergedPositions = emptySet()
         )
 
         canUndo = false
         previousGrid = null
         _canUndoState.value = false
+    }
+
+    fun consumeMergeEvent() {
+        _mergeEvent.value = null
+    }
+
+    // ─── Settings ─────────────────────────────────────────────
+
+    fun toggleSound() {
+        val current = _settingsState.value
+        _settingsState.value = current.copy(soundEnabled = !current.soundEnabled)
+        saveSettings()
+    }
+
+    fun toggleHaptic() {
+        val current = _settingsState.value
+        _settingsState.value = current.copy(hapticEnabled = !current.hapticEnabled)
+        saveSettings()
+    }
+
+    fun toggleLightTheme() {
+        val current = _settingsState.value
+        _settingsState.value = current.copy(lightThemeEnabled = !current.lightThemeEnabled)
+        saveSettings()
     }
 
     // ─── Persistence ─────────────────────────────────────────
@@ -146,5 +207,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun saveBestScore(score: Int) {
         prefs.edit().putInt("best_score", score).apply()
+    }
+
+    private fun loadSettings() {
+        _settingsState.value = SettingsState(
+            soundEnabled = prefs.getBoolean("sound_enabled", true),
+            hapticEnabled = prefs.getBoolean("haptic_enabled", true),
+            lightThemeEnabled = prefs.getBoolean("light_theme_enabled", false)
+        )
+    }
+
+    private fun saveSettings() {
+        val settings = _settingsState.value
+        prefs.edit()
+            .putBoolean("sound_enabled", settings.soundEnabled)
+            .putBoolean("haptic_enabled", settings.hapticEnabled)
+            .putBoolean("light_theme_enabled", settings.lightThemeEnabled)
+            .apply()
     }
 }
