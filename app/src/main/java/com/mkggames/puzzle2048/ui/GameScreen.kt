@@ -17,6 +17,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -324,10 +325,11 @@ fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, o
         Button(
             onClick = onHelp,
             colors = ButtonDefaults.buttonColors(
-                containerColor = colors.buttonBg,
+                containerColor = colors.accentGold.copy(alpha = 0.15f),
                 contentColor = colors.accentGold
             ),
             shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(0.dp),
             modifier = Modifier
                 .width(48.dp)
                 .height(44.dp)
