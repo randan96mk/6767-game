@@ -143,14 +143,14 @@ fun GameScreen(viewModel: GameViewModel) {
                 canUndo = canUndo,
                 onUndo = { viewModel.undo() },
                 onNewGame = { viewModel.startNewGame() },
-                onHelp = { viewModel.showHowToPlay() }
+                onHelp = { viewModel.showHowToPlay() },
                 colors = colors
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // ─── Progress toward 2048 ────────────────
-            GoalProgressBar(highestTile = viewModel.getHighestTile())
+            GoalProgressBar(highestTile = viewModel.getHighestTile(), colors = colors)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -204,7 +204,7 @@ fun GameScreen(viewModel: GameViewModel) {
 
         // ─── How to Play Dialog ──────────────────────
         if (showHowToPlay) {
-            HowToPlayDialog(onDismiss = { viewModel.dismissHowToPlay() })
+            HowToPlayDialog(colors = colors, onDismiss = { viewModel.dismissHowToPlay() })
         }
     }
 }
@@ -289,8 +289,7 @@ fun ScoreCard(label: String, value: Int, accentColor: Color, colors: AppColors, 
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, onHelp: () -> Unit) {
-fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, colors: AppColors) {
+fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, onHelp: () -> Unit, colors: AppColors) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -325,8 +324,8 @@ fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, c
         Button(
             onClick = onHelp,
             colors = ButtonDefaults.buttonColors(
-                containerColor = ButtonBg,
-                contentColor = AccentGold
+                containerColor = colors.buttonBg,
+                contentColor = colors.accentGold
             ),
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier
@@ -536,7 +535,7 @@ fun TileCell(
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun GoalProgressBar(highestTile: Int) {
+fun GoalProgressBar(highestTile: Int, colors: AppColors) {
     val targetPower = 11 // 2^11 = 2048
     val currentPower = if (highestTile >= 2) {
         (ln(highestTile.toDouble()) / ln(2.0)).toInt()
@@ -557,13 +556,13 @@ fun GoalProgressBar(highestTile: Int) {
                 text = if (reachedGoal) "Goal reached!" else "Highest: $highestTile",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (reachedGoal) AccentGold else SubTextColor
+                color = if (reachedGoal) colors.accentGold else colors.subTextColor
             )
             Text(
                 text = "Goal: 2048",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (reachedGoal) AccentGold else AccentCyan
+                color = if (reachedGoal) colors.accentGold else colors.accentCyan
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -572,7 +571,7 @@ fun GoalProgressBar(highestTile: Int) {
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(ScoreBoxBg)
+                .background(colors.scoreBoxBg)
         ) {
             Box(
                 modifier = Modifier
@@ -582,11 +581,11 @@ fun GoalProgressBar(highestTile: Int) {
                     .background(
                         if (reachedGoal) {
                             Brush.horizontalGradient(
-                                colors = listOf(AccentCyan, AccentGold)
+                                colors = listOf(colors.accentCyan, colors.accentGold)
                             )
                         } else {
                             Brush.horizontalGradient(
-                                colors = listOf(AccentCyan.copy(alpha = 0.5f), AccentCyan)
+                                colors = listOf(colors.accentCyan.copy(alpha = 0.5f), colors.accentCyan)
                             )
                         }
                     )
@@ -596,16 +595,10 @@ fun GoalProgressBar(highestTile: Int) {
 }
 
 @Composable
-fun GameFooter(moveCount: Int) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Merge matching tiles to reach 2048 and win!",
 fun GameFooter(moveCount: Int, colors: AppColors) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Swipe to merge tiles \u2022 2 spawns (90%) \u2022 4 spawns (10%)",
+            text = "Merge matching tiles to reach 2048 and win!",
             fontSize = 11.sp,
             color = colors.subTextColor,
             textAlign = TextAlign.Center
@@ -765,11 +758,11 @@ fun SettingsDialog(
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun HowToPlayDialog(onDismiss: () -> Unit) {
+fun HowToPlayDialog(colors: AppColors, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(OverlayBg),
+            .background(colors.overlayBg),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -778,10 +771,7 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
                 .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A2E),
-                            Color(0xFF0D1117)
-                        )
+                        colors = listOf(colors.dialogGradientTop, colors.dialogGradientBottom)
                     )
                 )
                 .padding(24.dp),
@@ -791,7 +781,7 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
                 text = "HOW TO PLAY",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
-                color = AccentCyan,
+                color = colors.accentCyan,
                 letterSpacing = 3.sp
             )
 
@@ -802,7 +792,7 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(AccentGold.copy(alpha = 0.1f))
+                    .background(colors.accentGold.copy(alpha = 0.1f))
                     .padding(12.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -810,7 +800,7 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
                         text = "YOUR GOAL",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = AccentGold,
+                        color = colors.accentGold,
                         letterSpacing = 2.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -818,7 +808,7 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
                         text = "Reach the 2048 tile!",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFFFFD700)
+                        color = colors.accentGold
                     )
                 }
             }
@@ -826,20 +816,20 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Steps
-            HowToPlayStep(number = "1", text = "Swipe in any direction to slide all tiles")
+            HowToPlayStep(number = "1", text = "Swipe in any direction to slide all tiles", colors = colors)
             Spacer(modifier = Modifier.height(8.dp))
-            HowToPlayStep(number = "2", text = "When two tiles with the same number touch, they merge into one!")
+            HowToPlayStep(number = "2", text = "When two tiles with the same number touch, they merge into one!", colors = colors)
             Spacer(modifier = Modifier.height(8.dp))
-            HowToPlayStep(number = "3", text = "Keep merging: 2 + 2 = 4, 4 + 4 = 8, ... up to 2048")
+            HowToPlayStep(number = "3", text = "Keep merging: 2 + 2 = 4, 4 + 4 = 8, ... up to 2048", colors = colors)
             Spacer(modifier = Modifier.height(8.dp))
-            HowToPlayStep(number = "4", text = "Plan ahead — the board fills up fast!")
+            HowToPlayStep(number = "4", text = "Plan ahead \u2014 the board fills up fast!", colors = colors)
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "You can keep playing after reaching 2048 to chase an even higher score.",
                 fontSize = 12.sp,
-                color = SubTextColor,
+                color = colors.subTextColor,
                 textAlign = TextAlign.Center
             )
 
@@ -848,8 +838,8 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentCyan,
-                    contentColor = ScreenBackground
+                    containerColor = colors.accentCyan,
+                    contentColor = colors.screenBackground
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
@@ -863,7 +853,7 @@ fun HowToPlayDialog(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun HowToPlayStep(number: String, text: String) {
+private fun HowToPlayStep(number: String, text: String, colors: AppColors) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -873,22 +863,25 @@ private fun HowToPlayStep(number: String, text: String) {
             modifier = Modifier
                 .size(24.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(AccentCyan.copy(alpha = 0.2f)),
+                .background(colors.accentCyan.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = AccentCyan
+                color = colors.accentCyan
             )
         }
         Text(
             text = text,
             fontSize = 14.sp,
-            color = HeaderTextColor,
+            color = colors.headerTextColor,
             modifier = Modifier.weight(1f)
         )
+    }
+}
+
 @Composable
 fun SettingsToggleRow(
     label: String,
