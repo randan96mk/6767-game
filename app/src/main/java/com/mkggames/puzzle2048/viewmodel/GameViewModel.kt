@@ -58,10 +58,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val generation: Int
     )
 
+    private val _showHowToPlay = MutableStateFlow(false)
+    val showHowToPlay: StateFlow<Boolean> = _showHowToPlay.asStateFlow()
+
     init {
         loadBestScore()
         loadSettings()
         startNewGame()
+
+        // Show "How to Play" on first launch
+        if (!prefs.getBoolean("has_launched_before", false)) {
+            _showHowToPlay.value = true
+            prefs.edit().putBoolean("has_launched_before", true).apply()
+        }
     }
 
     // ─── Public Actions ──────────────────────────────────────
@@ -176,6 +185,25 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun consumeMergeEvent() {
         _mergeEvent.value = null
+    }
+
+    fun showHowToPlay() {
+        _showHowToPlay.value = true
+    }
+
+    fun dismissHowToPlay() {
+        _showHowToPlay.value = false
+    }
+
+    fun getHighestTile(): Int {
+        val grid = _state.value.grid
+        var max = 0
+        for (r in grid.indices) {
+            for (c in grid[r].indices) {
+                if (grid[r][c] > max) max = grid[r][c]
+            }
+        }
+        return max
     }
 
     // ─── Settings ─────────────────────────────────────────────
