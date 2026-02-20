@@ -1,5 +1,10 @@
 package com.mkggames.puzzle2048.ui
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -8,6 +13,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,9 +27,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,15 +51,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mkggames.puzzle2048.engine.GameEngine
+import androidx.compose.ui.window.Dialog
+import com.mkggames.puzzle2048.audio.SoundManager
 import com.mkggames.puzzle2048.engine.GameEngine.Direction
 import com.mkggames.puzzle2048.ui.theme.*
 import com.mkggames.puzzle2048.viewmodel.GameStatus
 import com.mkggames.puzzle2048.viewmodel.GameViewModel
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.ln
 
@@ -63,11 +76,51 @@ fun GameScreen(viewModel: GameViewModel) {
     val state by viewModel.state.collectAsState()
     val canUndo by viewModel.canUndoState.collectAsState()
     val showHowToPlay by viewModel.showHowToPlay.collectAsState()
+    val settings by viewModel.settingsState.collectAsState()
+    val mergeEvent by viewModel.mergeEvent.collectAsState()
+
+    val isLight = settings.lightThemeEnabled
+    val colors = getAppColors(isLight)
+
+    var showSettings by remember { mutableStateOf(false) }
+
+    // Sound manager + vibrator
+    val view = LocalView.current
+    val context = view.context
+    val soundManager = remember { SoundManager(context) }
+    val vibrator = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val mgr = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            mgr.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
+
+    // Handle merge events: sound + haptic
+    LaunchedEffect(mergeEvent) {
+        val event = mergeEvent ?: return@LaunchedEffect
+        if (settings.soundEnabled) {
+            soundManager.playMergeSound(event.maxMergedValue)
+        }
+        if (settings.hapticEnabled) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(50)
+            }
+        }
+        viewModel.consumeMergeEvent()
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ScreenBackground)
+            .background(colors.screenBackground)
     ) {
         Column(
             modifier = Modifier
@@ -75,16 +128,13 @@ fun GameScreen(viewModel: GameViewModel) {
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ─── Header ──────────────────────────────
-            GameHeader()
+            // ─── Header + Settings gear ──────────────
+            GameHeader(colors = colors, onSettingsClick = { showSettings = true })
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // ─── Score Row ───────────────────────────
-            ScoreRow(
-                score = state.score,
-                bestScore = state.bestScore
-            )
+            ScoreRow(score = state.score, bestScore = state.bestScore, colors = colors)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -94,6 +144,7 @@ fun GameScreen(viewModel: GameViewModel) {
                 onUndo = { viewModel.undo() },
                 onNewGame = { viewModel.startNewGame() },
                 onHelp = { viewModel.showHowToPlay() }
+                colors = colors
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -106,13 +157,17 @@ fun GameScreen(viewModel: GameViewModel) {
             // ─── Game Board with Swipe ───────────────
             SwipeableGameBoard(
                 grid = state.grid,
+                isLight = isLight,
+                colors = colors,
+                mergedPositions = state.mergedPositions,
+                mergeGeneration = state.mergeGeneration,
                 onSwipe = { direction -> viewModel.onSwipe(direction) }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // ─── Info Footer ─────────────────────────
-            GameFooter(moveCount = state.moveCount)
+            GameFooter(moveCount = state.moveCount, colors = colors)
         }
 
         // ─── Overlays ────────────────────────────────
@@ -121,11 +176,9 @@ fun GameScreen(viewModel: GameViewModel) {
             enter = fadeIn(tween(400)),
             exit = fadeOut(tween(200))
         ) {
-            WinOverlay(
-                score = state.score,
+            WinOverlay(score = state.score, colors = colors,
                 onContinue = { viewModel.continueAfterWin() },
-                onNewGame = { viewModel.startNewGame() }
-            )
+                onNewGame = { viewModel.startNewGame() })
         }
 
         AnimatedVisibility(
@@ -133,9 +186,19 @@ fun GameScreen(viewModel: GameViewModel) {
             enter = fadeIn(tween(400)),
             exit = fadeOut(tween(200))
         ) {
-            GameOverOverlay(
-                score = state.score,
-                onNewGame = { viewModel.startNewGame() }
+            GameOverOverlay(score = state.score, colors = colors,
+                onNewGame = { viewModel.startNewGame() })
+        }
+
+        // ─── Settings Dialog ─────────────────────────
+        if (showSettings) {
+            SettingsDialog(
+                settings = settings,
+                colors = colors,
+                onToggleSound = { viewModel.toggleSound() },
+                onToggleHaptic = { viewModel.toggleHaptic() },
+                onToggleTheme = { viewModel.toggleLightTheme() },
+                onDismiss = { showSettings = false }
             )
         }
 
@@ -151,22 +214,43 @@ fun GameScreen(viewModel: GameViewModel) {
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun GameHeader() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "2048",
-            fontSize = 52.sp,
-            fontWeight = FontWeight.Black,
-            color = AccentCyan,
-            letterSpacing = 4.sp
-        )
-        Text(
-            text = "SWIPE • MERGE • REACH 2048",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
-            color = SubTextColor,
-            letterSpacing = 2.sp
-        )
+fun GameHeader(colors: AppColors, onSettingsClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "2048",
+                fontSize = 52.sp,
+                fontWeight = FontWeight.Black,
+                color = colors.accentCyan,
+                letterSpacing = 4.sp
+            )
+            Text(
+                text = "SWIPE • MERGE • REACH 2048",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.subTextColor,
+                letterSpacing = 2.sp
+            )
+        }
+        // Gear / settings button
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(colors.buttonBg)
+                .clickable { onSettingsClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "\u2699",
+                fontSize = 20.sp,
+                color = colors.subTextColor
+            )
+        }
     }
 }
 
@@ -175,49 +259,28 @@ fun GameHeader() {
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun ScoreRow(score: Int, bestScore: Int) {
+fun ScoreRow(score: Int, bestScore: Int, colors: AppColors) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        ScoreCard(
-            label = "SCORE",
-            value = score,
-            accentColor = AccentCyan,
-            modifier = Modifier.weight(1f)
-        )
-        ScoreCard(
-            label = "BEST",
-            value = bestScore,
-            accentColor = AccentMagenta,
-            modifier = Modifier.weight(1f)
-        )
+        ScoreCard("SCORE", score, colors.accentCyan, colors, Modifier.weight(1f))
+        ScoreCard("BEST", bestScore, colors.accentMagenta, colors, Modifier.weight(1f))
     }
 }
 
 @Composable
-fun ScoreCard(label: String, value: Int, accentColor: Color, modifier: Modifier = Modifier) {
+fun ScoreCard(label: String, value: Int, accentColor: Color, colors: AppColors, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(ScoreBoxBg)
+            .background(colors.scoreBoxBg)
             .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = accentColor,
-            letterSpacing = 2.sp
-        )
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = accentColor, letterSpacing = 2.sp)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = value.toString(),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = HeaderTextColor
-        )
+        Text(value.toString(), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.headerTextColor)
     }
 }
 
@@ -227,41 +290,35 @@ fun ScoreCard(label: String, value: Int, accentColor: Color, modifier: Modifier 
 
 @Composable
 fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, onHelp: () -> Unit) {
+fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, colors: AppColors) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Undo Button
         Button(
             onClick = onUndo,
             enabled = canUndo,
             colors = ButtonDefaults.buttonColors(
-                containerColor = ButtonBg,
-                contentColor = AccentCyan,
-                disabledContainerColor = ButtonBg.copy(alpha = 0.5f),
-                disabledContentColor = SubTextColor.copy(alpha = 0.3f)
+                containerColor = colors.buttonBg,
+                contentColor = colors.accentCyan,
+                disabledContainerColor = colors.buttonBg.copy(alpha = 0.5f),
+                disabledContentColor = colors.subTextColor.copy(alpha = 0.3f)
             ),
             shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-                .weight(1f)
-                .height(44.dp)
+            modifier = Modifier.weight(1f).height(44.dp)
         ) {
-            Text("↩ UNDO", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("\u21A9 UNDO", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
-
-        // New Game Button
         Button(
             onClick = onNewGame,
             colors = ButtonDefaults.buttonColors(
-                containerColor = AccentCyan.copy(alpha = 0.15f),
-                contentColor = AccentCyan
+                containerColor = colors.accentCyan.copy(alpha = 0.15f),
+                contentColor = colors.accentCyan
             ),
             shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-                .weight(1f)
-                .height(44.dp)
+            modifier = Modifier.weight(1f).height(44.dp)
         ) {
-            Text("⟳ NEW GAME", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("\u27F3 NEW GAME", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
 
         // How to Play Button
@@ -286,7 +343,14 @@ fun ActionButtons(canUndo: Boolean, onUndo: () -> Unit, onNewGame: () -> Unit, o
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun SwipeableGameBoard(grid: Array<IntArray>, onSwipe: (Direction) -> Unit) {
+fun SwipeableGameBoard(
+    grid: Array<IntArray>,
+    isLight: Boolean,
+    colors: AppColors,
+    mergedPositions: Set<Pair<Int, Int>> = emptySet(),
+    mergeGeneration: Int = 0,
+    onSwipe: (Direction) -> Unit
+) {
     val density = LocalDensity.current
     val swipeThreshold = with(density) { 40.dp.toPx() }
 
@@ -299,7 +363,7 @@ fun SwipeableGameBoard(grid: Array<IntArray>, onSwipe: (Direction) -> Unit) {
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(RoundedCornerShape(16.dp))
-            .background(GridBackground)
+            .background(colors.gridBackground)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = {
@@ -316,7 +380,6 @@ fun SwipeableGameBoard(grid: Array<IntArray>, onSwipe: (Direction) -> Unit) {
                         if (isDragging) {
                             val absX = abs(totalDragX)
                             val absY = abs(totalDragY)
-
                             if (absX > swipeThreshold || absY > swipeThreshold) {
                                 val direction = if (absX > absY) {
                                     if (totalDragX > 0) Direction.RIGHT else Direction.LEFT
@@ -328,28 +391,26 @@ fun SwipeableGameBoard(grid: Array<IntArray>, onSwipe: (Direction) -> Unit) {
                         }
                         isDragging = false
                     },
-                    onDragCancel = {
-                        isDragging = false
-                    }
+                    onDragCancel = { isDragging = false }
                 )
             }
             .padding(8.dp)
     ) {
-        // Grid of tiles
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             for (row in 0 until 4) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     for (col in 0 until 4) {
                         TileCell(
                             value = grid[row][col],
+                            isLight = isLight,
+                            isMerged = (row to col) in mergedPositions,
+                            mergeGeneration = mergeGeneration,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -364,15 +425,21 @@ fun SwipeableGameBoard(grid: Array<IntArray>, onSwipe: (Direction) -> Unit) {
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun TileCell(value: Int, modifier: Modifier = Modifier) {
-    val style = getTileStyle(value)
+fun TileCell(
+    value: Int,
+    isLight: Boolean = false,
+    isMerged: Boolean = false,
+    mergeGeneration: Int = 0,
+    modifier: Modifier = Modifier
+) {
+    val style = getTileStyle(value, isLight)
     val fontSize = getTileFontSize(value)
 
-    // Pop animation for new/merged tiles
-    val scale = remember(value) { Animatable(if (value != 0) 0.7f else 1f) }
+    // Pop animation for new tiles (appear from small)
+    val spawnScale = remember(value) { Animatable(if (value != 0) 0.7f else 1f) }
     LaunchedEffect(value) {
         if (value != 0) {
-            scale.animateTo(
+            spawnScale.animateTo(
                 targetValue = 1f,
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -382,20 +449,58 @@ fun TileCell(value: Int, modifier: Modifier = Modifier) {
         }
     }
 
+    // Merge animation: scale overshoot 1.0 -> 1.25 -> 1.0
+    val mergeScale = remember { Animatable(1f) }
+    // Merge glow pulse: alpha 0 -> 1 -> 0
+    val mergeGlow = remember { Animatable(0f) }
+
+    LaunchedEffect(isMerged, mergeGeneration) {
+        if (isMerged && value != 0) {
+            // Run scale overshoot and glow pulse in parallel
+            launch {
+                mergeScale.snapTo(1f)
+                mergeScale.animateTo(
+                    targetValue = 1.25f,
+                    animationSpec = tween(durationMillis = 120)
+                )
+                mergeScale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+            }
+            launch {
+                mergeGlow.snapTo(0.8f)
+                mergeGlow.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 500)
+                )
+            }
+        }
+    }
+
+    val combinedScale = spawnScale.value * mergeScale.value
+    val glowAlpha = mergeGlow.value
+    val glowColor = style.glowColor ?: style.textColor.copy(alpha = 0.4f)
+
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = combinedScale
+                scaleY = combinedScale
             }
             .then(
-                if (style.glowColor != null && value != 0) {
+                if ((style.glowColor != null && value != 0) || glowAlpha > 0f) {
+                    val elevation = if (glowAlpha > 0f) (8 + (16 * glowAlpha)).dp else 8.dp
+                    val effectiveGlow = if (glowAlpha > 0f) glowColor.copy(alpha = glowAlpha) else style.glowColor ?: Color.Transparent
                     Modifier.shadow(
-                        elevation = 8.dp,
+                        elevation = elevation,
                         shape = RoundedCornerShape(10.dp),
-                        ambientColor = style.glowColor,
-                        spotColor = style.glowColor
+                        ambientColor = effectiveGlow,
+                        spotColor = effectiveGlow
                     )
                 } else Modifier
             )
@@ -403,6 +508,17 @@ fun TileCell(value: Int, modifier: Modifier = Modifier) {
             .background(style.background),
         contentAlignment = Alignment.Center
     ) {
+        // Glow overlay for merge flash
+        if (glowAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        glowColor.copy(alpha = glowAlpha * 0.3f),
+                        RoundedCornerShape(10.dp)
+                    )
+            )
+        }
         if (value != 0) {
             Text(
                 text = value.toString(),
@@ -486,16 +602,16 @@ fun GameFooter(moveCount: Int) {
     ) {
         Text(
             text = "Merge matching tiles to reach 2048 and win!",
+fun GameFooter(moveCount: Int, colors: AppColors) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "Swipe to merge tiles \u2022 2 spawns (90%) \u2022 4 spawns (10%)",
             fontSize = 11.sp,
-            color = SubTextColor,
+            color = colors.subTextColor,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Moves: $moveCount",
-            fontSize = 11.sp,
-            color = SubTextColor.copy(alpha = 0.6f)
-        )
+        Text("Moves: $moveCount", fontSize = 11.sp, color = colors.subTextColor.copy(alpha = 0.6f))
     }
 }
 
@@ -504,85 +620,39 @@ fun GameFooter(moveCount: Int) {
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun WinOverlay(score: Int, onContinue: () -> Unit, onNewGame: () -> Unit) {
+fun WinOverlay(score: Int, colors: AppColors, onContinue: () -> Unit, onNewGame: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(OverlayBg),
+        modifier = Modifier.fillMaxSize().background(colors.overlayBg),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .padding(32.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A2E),
-                            Color(0xFF0D1117)
-                        )
-                    )
-                )
+                .background(Brush.verticalGradient(listOf(colors.dialogGradientTop, colors.dialogGradientBottom)))
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "🎉",
-                fontSize = 48.sp
-            )
+            Text("\uD83C\uDF89", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "YOU WIN!",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFFFFD700),
-                letterSpacing = 4.sp
-            )
+            Text("YOU WIN!", fontSize = 36.sp, fontWeight = FontWeight.Black, color = colors.accentGold, letterSpacing = 4.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "You reached 2048!",
-                fontSize = 16.sp,
-                color = SubTextColor
-            )
-            Text(
-                text = "Score: $score",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = AccentCyan
-            )
+            Text("You reached 2048!", fontSize = 16.sp, color = colors.subTextColor)
+            Text("Score: $score", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.accentCyan)
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Continue Button
             Button(
                 onClick = onContinue,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentCyan,
-                    contentColor = ScreenBackground
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accentCyan, contentColor = colors.screenBackground),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text("KEEP GOING", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            }
-
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) { Text("KEEP GOING", fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
             Spacer(modifier = Modifier.height(8.dp))
-
-            // New Game Button
             Button(
                 onClick = onNewGame,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ButtonBg,
-                    contentColor = SubTextColor
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.buttonBg, contentColor = colors.subTextColor),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text("NEW GAME", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            }
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) { Text("NEW GAME", fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
         }
     }
 }
@@ -592,61 +662,99 @@ fun WinOverlay(score: Int, onContinue: () -> Unit, onNewGame: () -> Unit) {
 // ═══════════════════════════════════════════════════════════════
 
 @Composable
-fun GameOverOverlay(score: Int, onNewGame: () -> Unit) {
+fun GameOverOverlay(score: Int, colors: AppColors, onNewGame: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(OverlayBg),
+        modifier = Modifier.fillMaxSize().background(colors.overlayBg),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .padding(32.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF2D1117),
-                            Color(0xFF0D1117)
-                        )
-                    )
-                )
+                .background(Brush.verticalGradient(listOf(colors.dialogGradientTop, colors.dialogGradientBottom)))
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "GAME OVER",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                color = AccentMagenta,
-                letterSpacing = 4.sp
-            )
+            Text("GAME OVER", fontSize = 32.sp, fontWeight = FontWeight.Black, color = colors.accentMagenta, letterSpacing = 4.sp)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Final Score",
-                fontSize = 14.sp,
-                color = SubTextColor
-            )
-            Text(
-                text = score.toString(),
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Black,
-                color = HeaderTextColor
-            )
+            Text("Final Score", fontSize = 14.sp, color = colors.subTextColor)
+            Text(score.toString(), fontSize = 36.sp, fontWeight = FontWeight.Black, color = colors.headerTextColor)
             Spacer(modifier = Modifier.height(24.dp))
-
             Button(
                 onClick = onNewGame,
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accentMagenta, contentColor = Color.White),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) { Text("TRY AGAIN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS DIALOG
+// ═══════════════════════════════════════════════════════════════
+
+@Composable
+fun SettingsDialog(
+    settings: com.mkggames.puzzle2048.viewmodel.SettingsState,
+    colors: AppColors,
+    onToggleSound: () -> Unit,
+    onToggleHaptic: () -> Unit,
+    onToggleTheme: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(Brush.verticalGradient(listOf(colors.dialogGradientTop, colors.dialogGradientBottom)))
+                .padding(24.dp)
+        ) {
+            Text(
+                "Settings",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.headerTextColor,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            SettingsToggleRow(
+                label = "Sound Effects",
+                icon = "\uD83D\uDD0A",
+                checked = settings.soundEnabled,
+                onToggle = onToggleSound,
+                colors = colors
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingsToggleRow(
+                label = "Haptic Feedback",
+                icon = "\uD83D\uDCF3",
+                checked = settings.hapticEnabled,
+                onToggle = onToggleHaptic,
+                colors = colors
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingsToggleRow(
+                label = "Light Theme",
+                icon = "\u2600\uFE0F",
+                checked = settings.lightThemeEnabled,
+                onToggle = onToggleTheme,
+                colors = colors
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentMagenta,
-                    contentColor = Color.White
+                    containerColor = colors.accentCyan,
+                    contentColor = colors.screenBackground
                 ),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(44.dp)
             ) {
-                Text("TRY AGAIN", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("Done", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -780,6 +888,41 @@ private fun HowToPlayStep(number: String, text: String) {
             fontSize = 14.sp,
             color = HeaderTextColor,
             modifier = Modifier.weight(1f)
+        )
+@Composable
+fun SettingsToggleRow(
+    label: String,
+    icon: String,
+    checked: Boolean,
+    onToggle: () -> Unit,
+    colors: AppColors
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.screenBackground.copy(alpha = 0.5f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(icon, fontSize = 20.sp)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            label,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = colors.headerTextColor,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = { onToggle() },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = colors.toggleTrackOn,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = colors.toggleTrackOff
+            )
         )
     }
 }

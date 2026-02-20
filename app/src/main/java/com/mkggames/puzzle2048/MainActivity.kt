@@ -6,10 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mkggames.puzzle2048.ui.GameScreen
-import com.mkggames.puzzle2048.ui.theme.ScreenBackground
+import com.mkggames.puzzle2048.ui.theme.getAppColors
 import com.mkggames.puzzle2048.viewmodel.GameViewModel
 
 class MainActivity : ComponentActivity() {
@@ -17,11 +19,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val viewModel: GameViewModel = viewModel()
+            val settings by viewModel.settingsState.collectAsState()
+            val colors = getAppColors(settings.lightThemeEnabled)
+
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = ScreenBackground
+                color = colors.screenBackground
             ) {
-                val viewModel: GameViewModel = viewModel()
                 GameScreen(viewModel = viewModel)
             }
         }
