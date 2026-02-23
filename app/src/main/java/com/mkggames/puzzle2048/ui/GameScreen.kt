@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -125,7 +126,9 @@ fun GameScreen(viewModel: GameViewModel) {
     ) {
         Column(
             modifier = Modifier
+                .widthIn(max = 500.dp)
                 .fillMaxSize()
+                .align(Alignment.TopCenter)
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -622,6 +625,7 @@ fun WinOverlay(score: Int, colors: AppColors, onContinue: () -> Unit, onNewGame:
     ) {
         Column(
             modifier = Modifier
+                .widthIn(max = 420.dp)
                 .padding(32.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Brush.verticalGradient(listOf(colors.dialogGradientTop, colors.dialogGradientBottom)))
@@ -664,6 +668,7 @@ fun GameOverOverlay(score: Int, colors: AppColors, onNewGame: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
+                .widthIn(max = 420.dp)
                 .padding(32.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Brush.verticalGradient(listOf(colors.dialogGradientTop, colors.dialogGradientBottom)))
@@ -769,6 +774,7 @@ fun HowToPlayDialog(colors: AppColors, onDismiss: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
+                .widthIn(max = 420.dp)
                 .padding(24.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(
