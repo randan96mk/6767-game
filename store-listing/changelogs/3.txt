@@ -1,0 +1,7 @@
+v1.1.0 — What's New
+
+• Sound effects: merge pops, tile spawns, win fanfare, and game over tone
+• Haptic feedback on every merge and game event
+• Help button with full in-game how-to-play instructions
+• Improved tablet layout with centred game board
+• Bug fixes and performance improvements
